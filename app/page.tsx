@@ -68,10 +68,9 @@ export default function HomePage() {
       <nav className="border-b border-slate-800 px-4 py-4">
         <div className="mx-auto max-w-5xl flex items-center justify-between">
           <span className="text-base font-bold tracking-tight">👕 ClothingEnhancer</span>
-          <div className="flex gap-3">
-            <a href="#pricing" className="text-xs text-slate-400 hover:text-slate-200">Priser</a>
-            <a href="#how" className="text-xs text-slate-400 hover:text-slate-200">Hur det funkar</a>
-          </div>
+          <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400">
+            100% Gratis
+          </span>
         </div>
       </nav>
 
@@ -81,7 +80,7 @@ export default function HomePage() {
           <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
             <div className="max-w-lg">
               <span className="inline-block rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400 mb-4">
-                ✨ AI-driven bildförbättring
+                ✨ AI-driven bildförbättring – alltid gratis
               </span>
               <h1 className="text-4xl font-bold tracking-tight leading-tight md:text-5xl">
                 Bättre produktbilder<br />
@@ -90,12 +89,13 @@ export default function HomePage() {
               <p className="mt-4 text-slate-300 text-sm leading-relaxed">
                 Ladda upp en snabb mobilbild – få tillbaka en ren, ljus och
                 butiksklar bild som passar Vinted, Tradera, Blocket eller din egna shop.
+                Helt gratis, inga konton, inga begränsningar.
               </p>
               <div className="mt-6 flex flex-wrap gap-3 items-center">
-                <UploadInput label="Testa gratis – ladda upp bild" />
+                <UploadInput label="Ladda upp & förbättra" />
                 <a href="#how" className="text-sm text-slate-400 hover:text-slate-200 underline underline-offset-4">Se hur det funkar →</a>
               </div>
-              <p className="mt-3 text-xs text-slate-500">Inga kortuppgifter. Ladda upp, förbättra, ladda ner.</p>
+              <p className="mt-3 text-xs text-slate-500">Inga kortuppgifter. Inga konton. Helt gratis alltid.</p>
             </div>
 
             {/* Upload card */}
@@ -184,55 +184,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PRICING */}
-      <section id="pricing" className="border-b border-slate-800 bg-slate-900/30">
-        <div className="mx-auto max-w-5xl px-4 py-12">
-          <h2 className="text-xl font-bold">Enkla priser</h2>
-          <p className="mt-1 text-sm text-slate-400">Betala bara för det du använder.</p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              { name: 'Gratis', price: '0 kr', credits: '5 bilder/mån', highlight: false, features: ['5 förbättrade bilder', 'Standard kvalitet', 'PNG-nedladdning'] },
-              { name: 'Pro', price: '49 kr/mån', credits: '100 bilder/mån', highlight: true, features: ['100 förbättrade bilder', 'HD-kvalitet', 'PNG & JPG', 'AI-beskrivningar'] },
-              { name: 'Business', price: '149 kr/mån', credits: 'Obegränsat', highlight: false, features: ['Obegränsat bilder', 'Batch-uppladdning', 'API-åtkomst', 'Prioritet support'] },
-            ].map(({ name, price, credits, highlight, features }) => (
-              <div key={name} className={`rounded-xl border p-5 ${
-                highlight ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-700 bg-slate-900/50'
-              }`}>
-                {highlight && <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Populärast</span>}
-                <h3 className={`mt-1 text-lg font-bold ${highlight ? 'text-emerald-400' : ''}`}>{name}</h3>
-                <p className="mt-1 text-2xl font-bold">{price}</p>
-                <p className="text-xs text-slate-400 mt-1">{credits}</p>
-                <ul className="mt-4 space-y-2">
-                  {features.map(f => (
-                    <li key={f} className="flex items-center gap-2 text-xs text-slate-300">
-                      <span className="text-emerald-400">✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-                <button className={`mt-4 w-full rounded-full py-2 text-sm font-semibold transition-all ${
-                  highlight
-                    ? 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
-                    : 'border border-slate-600 text-slate-200 hover:border-slate-400'
-                }`}>
-                  Kom igång
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FOOTER CTA */}
       <section className="bg-slate-950">
         <div className="mx-auto max-w-5xl px-4 py-10">
           <div className="flex flex-col justify-between gap-4 border-t border-slate-800 pt-6 md:flex-row md:items-center">
             <div>
               <h2 className="text-lg font-bold">Gör varje annons lite mer premium.</h2>
-              <p className="mt-1 text-sm text-slate-400">Sälj mer med samma garderob.</p>
+              <p className="mt-1 text-sm text-slate-400">Helt gratis – sälj mer med samma garderob.</p>
             </div>
-            <UploadInput label="Testa gratis nu" />
+            <UploadInput label="Förbättra en bild nu" />
           </div>
-          <p className="mt-6 text-xs text-slate-600 text-center">© 2026 ClothingEnhancer. Byggd med Next.js + Tailwind.</p>
+          <p className="mt-6 text-xs text-slate-600 text-center">© 2026 ClothingEnhancer. Alltid gratis.</p>
         </div>
       </section>
     </main>
