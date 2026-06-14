@@ -89,9 +89,9 @@ export default function HomePage() {
           <h2 className="text-lg font-bold mb-2">Verktyg</h2>
           <p className="text-sm text-slate-400 mb-8">Välj ett verktyg nedan för att komma igång.</p>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
 
-            {/* Tool 1: Background Remover */}
+            {/* Tool 1: Background Remover – ACTIVE */}
             <div
               className={`rounded-2xl border ${
                 dragOver ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-700 bg-slate-900/60'
@@ -108,7 +108,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm text-slate-400 mb-4">
-                Ta bort bakgrunden från din klädsbild automatiskt. Perfekt för annonser på Vinted och Tradera.
+                Ta bort bakgrunden från din klädsbild automatiskt.
               </p>
               <div className="rounded-xl border border-dashed border-slate-600 bg-slate-950/40 p-5 text-center">
                 <label className="block cursor-pointer space-y-1">
@@ -127,7 +127,24 @@ export default function HomePage() {
               {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
             </div>
 
-            {/* Tool 2: Coming soon */}
+            {/* Tool 2: Cloth Reshaper – COMING SOON */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/30 p-6 opacity-60">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">👗</span>
+                <div>
+                  <h3 className="font-bold text-base">Cloth Reshaper</h3>
+                  <p className="text-xs text-slate-400">Kommer snart</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-500">
+                AI viktar och formar dina kläder snyggt – som om de bärs av någon. Perfekt för tygplagg, hoodies och jackor.
+              </p>
+              <div className="mt-4 inline-block rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-500">
+                🔒 Kommer snart
+              </div>
+            </div>
+
+            {/* Tool 3: AI Beskrivning – COMING SOON */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/30 p-6 opacity-60">
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-2xl">✍️</span>
@@ -137,7 +154,7 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm text-slate-500">
-                Ladda upp en bild – få en färdig titel, beskrivning och prisförslag anpassad för din plattform.
+                Få en färdig titel, beskrivning och prisförslag anpassad för Vinted, Tradera eller Blocket.
               </p>
               <div className="mt-4 inline-block rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-500">
                 🔒 Kommer snart
