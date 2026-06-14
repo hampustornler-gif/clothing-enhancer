@@ -18,15 +18,14 @@ export async function POST(req: NextRequest) {
     const mimeType = image.type || 'image/jpeg';
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    // Use cjwbw/rembg - most reliable background removal on Replicate
-    const startRes = await fetch('https://api.replicate.com/v1/predictions', {
+    // Use models endpoint (no version ID needed)
+    const startRes = await fetch('https://api.replicate.com/v1/models/cjwbw/rembg/predictions', {
       method: 'POST',
       headers: {
         'Authorization': `Token ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: 'fb8af171cfa1616ddcf1242c093f9c46bcada5ad458be56bc14e28ba2c819a4c',
         input: {
           image: dataUrl,
           model: 'u2net_cloth_seg',
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     const prediction = await startRes.json();
-    console.log('Prediction started:', prediction.id, 'status:', prediction.status);
+    console.log('Prediction started:', prediction.id);
 
     if (prediction.output) {
       return NextResponse.json({ enhancedUrl: prediction.output });
@@ -49,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     const predictionId = prediction.id;
     if (!predictionId) {
-      throw new Error(`No prediction ID returned: ${JSON.stringify(prediction)}`);
+      throw new Error(`No prediction ID: ${JSON.stringify(prediction)}`);
     }
 
     // Poll up to 60 seconds
@@ -59,7 +58,7 @@ export async function POST(req: NextRequest) {
         headers: { 'Authorization': `Token ${token}` },
       });
       const result = await poll.json();
-      console.log(`Poll ${i + 1}/60: status=${result.status}`);
+      console.log(`Poll ${i + 1}: status=${result.status}`);
 
       if (result.status === 'succeeded') {
         const output = Array.isArray(result.output) ? result.output[0] : result.output;
@@ -70,7 +69,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    throw new Error('Timeout: prediction did not complete within 60 seconds');
+    throw new Error('Timeout');
   } catch (err) {
     console.error('Enhance error:', err);
     return NextResponse.json(
