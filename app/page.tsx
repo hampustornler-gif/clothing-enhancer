@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import Link from 'next/link';
 
 type Result = { originalUrl: string; enhancedUrl: string };
 
@@ -127,22 +128,25 @@ export default function HomePage() {
               {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
             </div>
 
-            {/* Tool 2: Cloth Reshaper – COMING SOON */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/30 p-6 opacity-60">
+            {/* Tool 2: Cloth Reshaper – ACTIVE */}
+            <Link
+              href="/cloth-reshaper"
+              className="rounded-2xl border border-slate-700 bg-slate-900/60 p-6 shadow-xl transition-all hover:border-emerald-500/60 hover:bg-emerald-500/5 group block"
+            >
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-2xl">👗</span>
                 <div>
                   <h3 className="font-bold text-base">Cloth Reshaper</h3>
-                  <p className="text-xs text-slate-400">Kommer snart</p>
+                  <p className="text-xs text-emerald-400">Gratis • AI-driven</p>
                 </div>
               </div>
-              <p className="text-sm text-slate-500">
-                AI viktar och formar dina kläder snyggt – som om de bärs av någon. Perfekt för tygplagg, hoodies och jackor.
+              <p className="text-sm text-slate-400 mb-4">
+                AI formar och vikar dina kläder snyggt – flat lay, hängande eller ghost mannequin.
               </p>
-              <div className="mt-4 inline-block rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-500">
-                🔒 Kommer snart
+              <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400 group-hover:bg-emerald-500/20 transition-all">
+                Prova nu →
               </div>
-            </div>
+            </Link>
 
             {/* Tool 3: AI Beskrivning – COMING SOON */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/30 p-6 opacity-60">
@@ -203,8 +207,8 @@ export default function HomePage() {
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {[
               { step: '01', icon: '📤', title: 'Ladda upp', desc: 'Välj en bild från kamerarullen. Vi hanterar resten.' },
-              { step: '02', icon: '🤖', title: 'AI förbättrar', desc: 'Bakgrunden tas bort automatiskt med AI.' },
-              { step: '03', icon: '📥', title: 'Ladda ner', desc: 'Få en PNG utan bakgrund redo för Vinted, Tradera eller Blocket.' },
+              { step: '02', icon: '🤖', title: 'AI förbättrar', desc: 'Bakgrunden tas bort eller plagget formas automatiskt.' },
+              { step: '03', icon: '📥', title: 'Ladda ner', desc: 'Få en färdig PNG redo för Vinted, Tradera eller Blocket.' },
             ].map(({ step, icon, title, desc }) => (
               <div key={step} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
                 <span className="text-xs font-bold text-emerald-400">Steg {step}</span>
