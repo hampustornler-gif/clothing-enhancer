@@ -49,17 +49,9 @@ export default function HomePage() {
     if (!result?.enhancedUrl) return;
     const a = document.createElement('a');
     a.href = result.enhancedUrl;
-    a.download = 'enhanced.png';
+    a.download = 'no-background.png';
     a.click();
   }
-
-  const UploadInput = ({ label }: { label: string }) => (
-    <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-slate-950 hover:bg-emerald-400 active:scale-95 transition-all">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-      {label}
-      <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-    </label>
-  );
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 font-sans">
@@ -76,40 +68,50 @@ export default function HomePage() {
 
       {/* HERO */}
       <section className="border-b border-slate-800">
-        <div className="mx-auto max-w-5xl px-4 py-16 md:py-24">
-          <div className="flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-lg">
-              <span className="inline-block rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400 mb-4">
-                ✨ AI-driven bildförbättring – alltid gratis
-              </span>
-              <h1 className="text-4xl font-bold tracking-tight leading-tight md:text-5xl">
-                Bättre produktbilder<br />
-                <span className="text-emerald-400">på en minut.</span>
-              </h1>
-              <p className="mt-4 text-slate-300 text-sm leading-relaxed">
-                Ladda upp en snabb mobilbild – få tillbaka en ren, ljus och
-                butiksklar bild som passar Vinted, Tradera, Blocket eller din egna shop.
-                Helt gratis, inga konton, inga begränsningar.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3 items-center">
-                <UploadInput label="Ladda upp & förbättra" />
-                <a href="#how" className="text-sm text-slate-400 hover:text-slate-200 underline underline-offset-4">Se hur det funkar →</a>
-              </div>
-              <p className="mt-3 text-xs text-slate-500">Inga kortuppgifter. Inga konton. Helt gratis alltid.</p>
-            </div>
+        <div className="mx-auto max-w-5xl px-4 py-12 md:py-16">
+          <span className="inline-block rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-semibold text-emerald-400 mb-4">
+            ✨ AI-verktyg för klädsäljare – alltid gratis
+          </span>
+          <h1 className="text-4xl font-bold tracking-tight leading-tight md:text-5xl">
+            Bättre produktbilder<br />
+            <span className="text-emerald-400">på en minut.</span>
+          </h1>
+          <p className="mt-4 text-slate-300 text-sm leading-relaxed max-w-lg">
+            Gratis AI-verktyg som hjälper dig sälja mer på Vinted, Tradera och Blocket.
+            Inga konton, inga begränsningar.
+          </p>
+        </div>
+      </section>
 
-            {/* Upload card */}
+      {/* TOOLS GRID */}
+      <section className="border-b border-slate-800">
+        <div className="mx-auto max-w-5xl px-4 py-12">
+          <h2 className="text-lg font-bold mb-2">Verktyg</h2>
+          <p className="text-sm text-slate-400 mb-8">Välj ett verktyg nedan för att komma igång.</p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+
+            {/* Tool 1: Background Remover */}
             <div
-              className={`w-full max-w-sm rounded-2xl border ${
+              className={`rounded-2xl border ${
                 dragOver ? 'border-emerald-500 bg-emerald-500/5' : 'border-slate-700 bg-slate-900/60'
-              } p-5 shadow-2xl transition-all`}
+              } p-6 shadow-xl transition-all`}
               onDrop={handleDrop}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
             >
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Ladda upp</p>
-              <div className="rounded-xl border border-dashed border-slate-600 bg-slate-950/40 p-6 text-center">
-                <label className="block cursor-pointer space-y-2">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">🪄</span>
+                <div>
+                  <h3 className="font-bold text-base">Background Remover</h3>
+                  <p className="text-xs text-emerald-400">Gratis • AI-driven</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-400 mb-4">
+                Ta bort bakgrunden från din klädsbild automatiskt. Perfekt för annonser på Vinted och Tradera.
+              </p>
+              <div className="rounded-xl border border-dashed border-slate-600 bg-slate-950/40 p-5 text-center">
+                <label className="block cursor-pointer space-y-1">
                   <div className="text-3xl">📷</div>
                   <span className="block text-sm font-medium text-slate-200">Dra in en bild här</span>
                   <span className="block text-xs text-slate-400">eller klicka för att välja</span>
@@ -119,22 +121,40 @@ export default function HomePage() {
               {isEnhancing && (
                 <div className="mt-4 flex items-center gap-2">
                   <div className="h-2 w-2 animate-ping rounded-full bg-emerald-400"></div>
-                  <p className="text-xs text-emerald-400">Förbättrar bilden… ca 10–20 sek.</p>
+                  <p className="text-xs text-emerald-400">Tar bort bakgrunden… ca 10–20 sek.</p>
                 </div>
               )}
               {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
             </div>
+
+            {/* Tool 2: Coming soon */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/30 p-6 opacity-60">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">✍️</span>
+                <div>
+                  <h3 className="font-bold text-base">AI Beskrivning</h3>
+                  <p className="text-xs text-slate-400">Kommer snart</p>
+                </div>
+              </div>
+              <p className="text-sm text-slate-500">
+                Ladda upp en bild – få en färdig titel, beskrivning och prisförslag anpassad för din plattform.
+              </p>
+              <div className="mt-4 inline-block rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-500">
+                🔒 Kommer snart
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* BEFORE / AFTER */}
-      <section id="result" className="border-b border-slate-800 bg-slate-900/30">
-        <div className="mx-auto max-w-5xl px-4 py-12">
-          <h2 className="text-xl font-bold">Före & efter</h2>
-          <p className="mt-1 text-sm text-slate-400">Se skillnaden innan du laddar ner.</p>
-          {result ? (
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
+      {/* RESULT */}
+      {result && (
+        <section className="border-b border-slate-800 bg-slate-900/30">
+          <div className="mx-auto max-w-5xl px-4 py-12">
+            <h2 className="text-xl font-bold">Resultat – Före & efter</h2>
+            <p className="mt-1 text-sm text-slate-400 mb-6">Se skillnaden och ladda ner din bild.</p>
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <p className="mb-2 text-xs font-semibold text-slate-400 uppercase tracking-widest">Före</p>
                 <div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-900">
@@ -143,24 +163,20 @@ export default function HomePage() {
               </div>
               <div>
                 <p className="mb-2 text-xs font-semibold text-emerald-400 uppercase tracking-widest">Efter ✨</p>
-                <div className="overflow-hidden rounded-xl border border-emerald-600/50 bg-slate-900">
-                  <img src={result.enhancedUrl} alt="Förbättrad" className="h-72 w-full object-contain" />
+                <div className="overflow-hidden rounded-xl border border-emerald-600/50" style={{background: 'repeating-conic-gradient(#1e293b 0% 25%, #0f172a 0% 50%) 0 0 / 20px 20px'}}>
+                  <img src={result.enhancedUrl} alt="Utan bakgrund" className="h-72 w-full object-contain" />
                 </div>
                 <button
                   onClick={handleDownload}
                   className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-xs font-semibold text-slate-950 hover:bg-emerald-400 active:scale-95 transition-all"
                 >
-                  ⬇️ Ladda ner förbättrad bild
+                  ⬇️ Ladda ner PNG (utan bakgrund)
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-10 text-center text-sm text-slate-500">
-              Ladda upp en bild ovan för att se resultat här.
-            </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
       {/* HOW IT WORKS */}
       <section id="how" className="border-b border-slate-800">
@@ -170,8 +186,8 @@ export default function HomePage() {
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {[
               { step: '01', icon: '📤', title: 'Ladda upp', desc: 'Välj en bild från kamerarullen. Vi hanterar resten.' },
-              { step: '02', icon: '🤖', title: 'AI förbättrar', desc: 'Bakgrund, ljus och skärpa justeras automatiskt.' },
-              { step: '03', icon: '📥', title: 'Ladda ner', desc: 'Få en högupplöst bild redo för Vinted, Tradera eller Blocket.' },
+              { step: '02', icon: '🤖', title: 'AI förbättrar', desc: 'Bakgrunden tas bort automatiskt med AI.' },
+              { step: '03', icon: '📥', title: 'Ladda ner', desc: 'Få en PNG utan bakgrund redo för Vinted, Tradera eller Blocket.' },
             ].map(({ step, icon, title, desc }) => (
               <div key={step} className="rounded-xl border border-slate-800 bg-slate-900/50 p-5">
                 <span className="text-xs font-bold text-emerald-400">Steg {step}</span>
@@ -184,17 +200,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER CTA */}
+      {/* FOOTER */}
       <section className="bg-slate-950">
         <div className="mx-auto max-w-5xl px-4 py-10">
-          <div className="flex flex-col justify-between gap-4 border-t border-slate-800 pt-6 md:flex-row md:items-center">
-            <div>
-              <h2 className="text-lg font-bold">Gör varje annons lite mer premium.</h2>
-              <p className="mt-1 text-sm text-slate-400">Helt gratis – sälj mer med samma garderob.</p>
-            </div>
-            <UploadInput label="Förbättra en bild nu" />
+          <div className="border-t border-slate-800 pt-6">
+            <p className="text-xs text-slate-600 text-center">© 2026 ClothingEnhancer. Alltid gratis.</p>
           </div>
-          <p className="mt-6 text-xs text-slate-600 text-center">© 2026 ClothingEnhancer. Alltid gratis.</p>
         </div>
       </section>
     </main>
