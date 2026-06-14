@@ -33,11 +33,9 @@ export async function POST(req: NextRequest) {
 
     const prompt = stylePrompts[style] || stylePrompts['flat'];
 
-    // Convert to Uint8Array to satisfy TypeScript BlobPart type
-    const uint8Array = new Uint8Array(resizedBuffer.buffer, resizedBuffer.byteOffset, resizedBuffer.byteLength);
-
     const outForm = new FormData();
-    outForm.append('init_image', new Blob([uint8Array], { type: 'image/png' }), 'image.png');
+    // TS tycker illa om Buffer här, men i runtime är det ok – kasta till any
+    outForm.append('init_image', new Blob([resizedBuffer as any], { type: 'image/png' }), 'image.png');
     outForm.append('init_image_mode', 'IMAGE_STRENGTH');
     outForm.append('image_strength', '0.35');
     outForm.append('text_prompts[0][text]', prompt);
