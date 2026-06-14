@@ -2,74 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const token = process.env.REPLICATE_API_TOKEN;
-    if (!token) {
-      return NextResponse.json({ error: 'API token missing' }, { status: 500 });
-    }
-
     const formData = await req.formData();
     const image = formData.get('image') as File | null;
     if (!image) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
-    const arrayBuffer = await image.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
-    const mimeType = image.type || 'image/jpeg';
-    const dataUrl = `data:${mimeType};base64,${base64}`;
+    const apiKey = process.env.REMOVE_BG_API_KEY;
+    if (!apiKey) {
+      // Fallback: return original image if no API key
+      const arrayBuffer = await image.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString('base64');
+      const mimeType = image.type || 'image/jpeg';
+      return NextResponse.json({ enhancedUrl: `data:${mimeType};base64,${base64}` });
+    }
 
-    // Use models endpoint (no version ID needed)
-    const startRes = await fetch('https://api.replicate.com/v1/models/cjwbw/rembg/predictions', {
+    const outFormData = new FormData();
+    outFormData.append('image_file', image);
+    outFormData.append('size', 'auto');
+
+    const res = await fetch('https://api.remove.bg/v1.0/removebg', {
       method: 'POST',
-      headers: {
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        input: {
-          image: dataUrl,
-          model: 'u2net_cloth_seg',
-        },
-      }),
+      headers: { 'X-Api-Key': apiKey },
+      body: outFormData,
     });
 
-    if (!startRes.ok) {
-      const errText = await startRes.text();
-      console.error('Replicate start error:', errText);
-      throw new Error(`Replicate error: ${startRes.status} ${errText}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('remove.bg error:', errText);
+      throw new Error(`remove.bg error: ${res.status}`);
     }
 
-    const prediction = await startRes.json();
-    console.log('Prediction started:', prediction.id);
+    const resultBuffer = await res.arrayBuffer();
+    const base64 = Buffer.from(resultBuffer).toString('base64');
+    return NextResponse.json({ enhancedUrl: `data:image/png;base64,${base64}` });
 
-    if (prediction.output) {
-      return NextResponse.json({ enhancedUrl: prediction.output });
-    }
-
-    const predictionId = prediction.id;
-    if (!predictionId) {
-      throw new Error(`No prediction ID: ${JSON.stringify(prediction)}`);
-    }
-
-    // Poll up to 60 seconds
-    for (let i = 0; i < 60; i++) {
-      await new Promise((r) => setTimeout(r, 1000));
-      const poll = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-        headers: { 'Authorization': `Token ${token}` },
-      });
-      const result = await poll.json();
-      console.log(`Poll ${i + 1}: status=${result.status}`);
-
-      if (result.status === 'succeeded') {
-        const output = Array.isArray(result.output) ? result.output[0] : result.output;
-        return NextResponse.json({ enhancedUrl: output });
-      }
-      if (result.status === 'failed' || result.status === 'canceled') {
-        throw new Error(`Prediction ${result.status}: ${result.error ?? 'unknown'}`);
-      }
-    }
-
-    throw new Error('Timeout');
   } catch (err) {
     console.error('Enhance error:', err);
     return NextResponse.json(
