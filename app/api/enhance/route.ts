@@ -18,51 +18,59 @@ export async function POST(req: NextRequest) {
     const mimeType = image.type || 'image/jpeg';
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    // Start prediction using the official rembg model
+    // Use cjwbw/rembg - most reliable background removal on Replicate
     const startRes = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
         'Authorization': `Token ${token}`,
         'Content-Type': 'application/json',
-        'Prefer': 'wait=60',
       },
       body: JSON.stringify({
-        version: '3d068e437b5b4982e2b5e3a9f2fe63febd07fc0e4a9c9d59e3c5c8b3e5c2f5e',
+        version: 'fb8af171cfa1616ddcf1242c093f9c46bcada5ad458be56bc14e28ba2c819a4c',
         input: {
           image: dataUrl,
+          model: 'u2net_cloth_seg',
         },
       }),
     });
 
-    const prediction = await startRes.json();
-    console.log('Replicate response:', JSON.stringify(prediction));
+    if (!startRes.ok) {
+      const errText = await startRes.text();
+      console.error('Replicate start error:', errText);
+      throw new Error(`Replicate error: ${startRes.status} ${errText}`);
+    }
 
-    // If synchronous result already returned
+    const prediction = await startRes.json();
+    console.log('Prediction started:', prediction.id, 'status:', prediction.status);
+
     if (prediction.output) {
       return NextResponse.json({ enhancedUrl: prediction.output });
     }
 
-    // Otherwise poll
     const predictionId = prediction.id;
     if (!predictionId) {
-      throw new Error(`No prediction ID: ${JSON.stringify(prediction)}`);
+      throw new Error(`No prediction ID returned: ${JSON.stringify(prediction)}`);
     }
 
+    // Poll up to 60 seconds
     for (let i = 0; i < 60; i++) {
       await new Promise((r) => setTimeout(r, 1000));
       const poll = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
         headers: { 'Authorization': `Token ${token}` },
       });
       const result = await poll.json();
-      console.log(`Poll ${i}: status=${result.status}`);
+      console.log(`Poll ${i + 1}/60: status=${result.status}`);
+
       if (result.status === 'succeeded') {
-        return NextResponse.json({ enhancedUrl: result.output });
-      } else if (result.status === 'failed' || result.status === 'canceled') {
-        throw new Error(`Prediction ${result.status}: ${result.error}`);
+        const output = Array.isArray(result.output) ? result.output[0] : result.output;
+        return NextResponse.json({ enhancedUrl: output });
+      }
+      if (result.status === 'failed' || result.status === 'canceled') {
+        throw new Error(`Prediction ${result.status}: ${result.error ?? 'unknown'}`);
       }
     }
 
-    throw new Error('Timeout: prediction did not complete in 60s');
+    throw new Error('Timeout: prediction did not complete within 60 seconds');
   } catch (err) {
     console.error('Enhance error:', err);
     return NextResponse.json(
