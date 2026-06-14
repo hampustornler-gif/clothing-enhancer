@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 
 export async function POST(req: NextRequest) {
   try {
     const token = process.env.STABILITY_API_KEY;
     if (!token) {
-      return NextResponse.json({ error: 'STABILITY_API_KEY saknas i miljövariablerna.' }, { status: 500 });
+      return NextResponse.json({ error: 'STABILITY_API_KEY saknas.' }, { status: 500 });
     }
 
     const formData = await req.formData();
@@ -15,6 +16,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ingen bild uppladdad.' }, { status: 400 });
     }
 
+    const arrayBuffer = await image.arrayBuffer();
+    const inputBuffer = Buffer.from(arrayBuffer);
+
+    // Resize to 1024x1024 (required by SDXL)
+    const resizedBuffer = await sharp(inputBuffer)
+      .resize(1024, 1024, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+      .png()
+      .toBuffer();
+
     const stylePrompts: Record<string, string> = {
       flat: 'professional flat lay clothing photography, garment neatly arranged on clean white surface, wrinkle-free, studio lighting, top-down view, product photo',
       hanging: 'clothing hanging on invisible hanger, clean white background, professional product photography, natural folds, studio lighting',
@@ -23,11 +33,8 @@ export async function POST(req: NextRequest) {
 
     const prompt = stylePrompts[style] || stylePrompts['flat'];
 
-    const arrayBuffer = await image.arrayBuffer();
-    const imageBuffer = Buffer.from(arrayBuffer);
-
     const outForm = new FormData();
-    outForm.append('init_image', new Blob([imageBuffer], { type: image.type }), image.name);
+    outForm.append('init_image', new Blob([resizedBuffer], { type: 'image/png' }), 'image.png');
     outForm.append('init_image_mode', 'IMAGE_STRENGTH');
     outForm.append('image_strength', '0.35');
     outForm.append('text_prompts[0][text]', prompt);
