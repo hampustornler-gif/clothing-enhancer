@@ -11,9 +11,13 @@ function pickPrompt(style: string) {
   return prompts[style] ?? prompts.hanging;
 }
 
-async function generateMask(imageBuffer: Buffer, removeBgKey: string): Promise<Buffer> {
+async function toUint8(file: File): Promise<Uint8Array> {
+  return new Uint8Array(await file.arrayBuffer());
+}
+
+async function generateMask(imageBytes: Uint8Array, removeBgKey: string): Promise<Uint8Array> {
   const fd = new FormData();
-  fd.append('image_file', new Blob([imageBuffer]), 'image.png');
+  fd.append('image_file', new Blob([imageBytes], { type: 'image/png' }), 'image.png');
   fd.append('size', 'auto');
 
   const res = await fetch('https://api.remove.bg/v1.0/removebg', {
@@ -21,27 +25,20 @@ async function generateMask(imageBuffer: Buffer, removeBgKey: string): Promise<B
     headers: { 'X-Api-Key': removeBgKey },
     body: fd,
   });
-
   if (!res.ok) throw new Error(`remove.bg error: ${res.status}`);
 
-  // remove.bg returns PNG with transparency — convert alpha to white/black mask
-  const pngBuffer = Buffer.from(await res.arrayBuffer());
+  const pngBytes = new Uint8Array(await res.arrayBuffer());
 
-  // We need sharp to invert alpha into a B&W mask
-  // But we can avoid sharp: Stability accepts a mask where white = edit, black = keep
-  // We invert: subject is black (keep), background is white (edit)
-  // Since remove.bg gives us the subject with transparent background,
-  // we build the mask manually using raw pixel manipulation
+  // Use sharp to extract alpha channel and invert it:
+  // subject = black (keep), background = white (edit area for inpainting)
   const sharp = (await import('sharp')).default;
-
-  // Extract alpha channel and invert it: subject=black(keep), background=white(edit)
-  const mask = await sharp(pngBuffer)
+  const maskBuffer = await sharp(Buffer.from(pngBytes))
     .extractChannel('alpha')
-    .negate()         // invert: subject becomes black (keep), bg becomes white (edit)
+    .negate()
     .png()
     .toBuffer();
 
-  return mask;
+  return new Uint8Array(maskBuffer);
 }
 
 export async function POST(req: NextRequest) {
@@ -54,22 +51,18 @@ export async function POST(req: NextRequest) {
 
     const stabilityKey = process.env.STABILITY_API_KEY;
     const removeBgKey = process.env.REMOVE_BG_API_KEY;
-
     if (!stabilityKey) return NextResponse.json({ error: 'STABILITY_API_KEY saknas.' }, { status: 500 });
     if (!removeBgKey) return NextResponse.json({ error: 'REMOVE_BG_API_KEY saknas.' }, { status: 500 });
 
-    const imageBuffer = Buffer.from(await image.arrayBuffer());
+    const imageBytes = await toUint8(image);
+    const maskBytes = await generateMask(imageBytes, removeBgKey);
 
-    // Step 1: Auto-generate mask using remove.bg
-    const maskBuffer = await generateMask(imageBuffer, removeBgKey);
-
-    // Step 2: Send image + mask to Stability Inpainting
     const out = new FormData();
-    out.append('image', new Blob([imageBuffer], { type: 'image/png' }), 'image.png');
-    out.append('mask', new Blob([maskBuffer], { type: 'image/png' }), 'mask.png');
+    out.append('image', new Blob([imageBytes], { type: 'image/png' }), 'image.png');
+    out.append('mask', new Blob([maskBytes], { type: 'image/png' }), 'mask.png');
     out.append('prompt', pickPrompt(style));
     out.append('output_format', 'png');
-    out.append('negative_prompt', 'different garment, wrong color, watermark, text, blurry, distorted, wrong style');
+    out.append('negative_prompt', 'different garment, wrong color, watermark, text, blurry, distorted');
     out.append('seed', '0');
     out.append('cfg_scale', '5');
     out.append('steps', '35');
@@ -89,7 +82,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await res.json();
-    const imageData = data.image || data.artifacts?.[0]?.base64;
+    const imageData: string | undefined = data.image ?? data.artifacts?.[0]?.base64;
     if (!imageData) return NextResponse.json({ error: 'Inget bildresultat fr\u00e5n API.' }, { status: 502 });
 
     const reshapedUrl = imageData.startsWith('data:') ? imageData : `data:image/png;base64,${imageData}`;
