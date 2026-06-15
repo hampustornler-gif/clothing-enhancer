@@ -26,14 +26,13 @@ export async function POST(req: NextRequest) {
       .toBuffer();
 
     const stylePrompts: Record<string, string> = {
-      flat: 'professional flat lay clothing photography, garment neatly arranged on clean white surface, wrinkle-free, studio lighting, top-down view, product photo',
-      hanging: 'clothing hanging on invisible hanger, clean white background, professional product photography, natural folds, studio lighting',
-      worn: 'ghost mannequin clothing photography, garment worn by invisible person, natural body shape, clean white background, professional studio lighting, e-commerce product photo',
+      flat: 'exact same garment, flat lay on clean white surface, same color same design same fabric, professional product photo, studio lighting, top-down view',
+      hanging: 'exact same garment hanging on invisible hanger, same color same design same fabric, clean white background, professional product photography, studio lighting',
+      worn: 'exact same garment on ghost mannequin, same color same design same fabric, clean white background, professional studio lighting, e-commerce product photo',
     };
 
     const prompt = stylePrompts[style] || stylePrompts['flat'];
 
-    // Slice out a clean ArrayBuffer (avoids SharedArrayBuffer TS error)
     const cleanBuffer: ArrayBuffer = resizedBuffer.buffer.slice(
       resizedBuffer.byteOffset,
       resizedBuffer.byteOffset + resizedBuffer.byteLength
@@ -42,12 +41,12 @@ export async function POST(req: NextRequest) {
     const outForm = new FormData();
     outForm.append('init_image', new Blob([cleanBuffer], { type: 'image/png' }), 'image.png');
     outForm.append('init_image_mode', 'IMAGE_STRENGTH');
-    outForm.append('image_strength', '0.35');
+    outForm.append('image_strength', '0.85');
     outForm.append('text_prompts[0][text]', prompt);
     outForm.append('text_prompts[0][weight]', '1');
-    outForm.append('text_prompts[1][text]', 'blurry, bad quality, distorted, watermark, person, face, hands');
+    outForm.append('text_prompts[1][text]', 'different garment, wrong color, wrong style, blurry, watermark, person, face, hands');
     outForm.append('text_prompts[1][weight]', '-1');
-    outForm.append('cfg_scale', '7');
+    outForm.append('cfg_scale', '5');
     outForm.append('samples', '1');
     outForm.append('steps', '30');
 
