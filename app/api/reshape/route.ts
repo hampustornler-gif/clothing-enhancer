@@ -11,13 +11,9 @@ function pickPrompt(style: string) {
   return prompts[style] ?? prompts.hanging;
 }
 
-async function toUint8(file: File): Promise<Uint8Array> {
-  return new Uint8Array(await file.arrayBuffer());
-}
-
-async function generateMask(imageBytes: Uint8Array, removeBgKey: string): Promise<Uint8Array> {
+async function generateMask(imageAb: ArrayBuffer, removeBgKey: string): Promise<ArrayBuffer> {
   const fd = new FormData();
-  fd.append('image_file', new Blob([imageBytes], { type: 'image/png' }), 'image.png');
+  fd.append('image_file', new Blob([imageAb], { type: 'image/png' }), 'image.png');
   fd.append('size', 'auto');
 
   const res = await fetch('https://api.remove.bg/v1.0/removebg', {
@@ -27,18 +23,17 @@ async function generateMask(imageBytes: Uint8Array, removeBgKey: string): Promis
   });
   if (!res.ok) throw new Error(`remove.bg error: ${res.status}`);
 
-  const pngBytes = new Uint8Array(await res.arrayBuffer());
+  const pngAb = await res.arrayBuffer();
 
-  // Use sharp to extract alpha channel and invert it:
-  // subject = black (keep), background = white (edit area for inpainting)
   const sharp = (await import('sharp')).default;
-  const maskBuffer = await sharp(Buffer.from(pngBytes))
+  const maskBuffer = await sharp(Buffer.from(pngAb))
     .extractChannel('alpha')
     .negate()
     .png()
     .toBuffer();
 
-  return new Uint8Array(maskBuffer);
+  // Slice returns a proper ArrayBuffer (not SharedArrayBuffer)
+  return maskBuffer.buffer.slice(maskBuffer.byteOffset, maskBuffer.byteOffset + maskBuffer.byteLength) as ArrayBuffer;
 }
 
 export async function POST(req: NextRequest) {
@@ -54,12 +49,12 @@ export async function POST(req: NextRequest) {
     if (!stabilityKey) return NextResponse.json({ error: 'STABILITY_API_KEY saknas.' }, { status: 500 });
     if (!removeBgKey) return NextResponse.json({ error: 'REMOVE_BG_API_KEY saknas.' }, { status: 500 });
 
-    const imageBytes = await toUint8(image);
-    const maskBytes = await generateMask(imageBytes, removeBgKey);
+    const imageAb = await image.arrayBuffer();
+    const maskAb = await generateMask(imageAb, removeBgKey);
 
     const out = new FormData();
-    out.append('image', new Blob([imageBytes], { type: 'image/png' }), 'image.png');
-    out.append('mask', new Blob([maskBytes], { type: 'image/png' }), 'mask.png');
+    out.append('image', new Blob([imageAb], { type: 'image/png' }), 'image.png');
+    out.append('mask', new Blob([maskAb], { type: 'image/png' }), 'mask.png');
     out.append('prompt', pickPrompt(style));
     out.append('output_format', 'png');
     out.append('negative_prompt', 'different garment, wrong color, watermark, text, blurry, distorted');
