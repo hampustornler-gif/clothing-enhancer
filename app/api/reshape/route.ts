@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
@@ -19,7 +20,6 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await image.arrayBuffer();
     const inputBuffer = Buffer.from(arrayBuffer);
 
-    // Resize to 1024x1024 (required by SDXL)
     const resizedBuffer = await sharp(inputBuffer)
       .resize(1024, 1024, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .png()
@@ -33,9 +33,14 @@ export async function POST(req: NextRequest) {
 
     const prompt = stylePrompts[style] || stylePrompts['flat'];
 
+    // Slice out a clean ArrayBuffer (avoids SharedArrayBuffer TS error)
+    const cleanBuffer: ArrayBuffer = resizedBuffer.buffer.slice(
+      resizedBuffer.byteOffset,
+      resizedBuffer.byteOffset + resizedBuffer.byteLength
+    ) as ArrayBuffer;
+
     const outForm = new FormData();
-    // TS tycker illa om Buffer här, men i runtime är det ok – kasta till any
-    outForm.append('init_image', new Blob([resizedBuffer as any], { type: 'image/png' }), 'image.png');
+    outForm.append('init_image', new Blob([cleanBuffer], { type: 'image/png' }), 'image.png');
     outForm.append('init_image_mode', 'IMAGE_STRENGTH');
     outForm.append('image_strength', '0.35');
     outForm.append('text_prompts[0][text]', prompt);
