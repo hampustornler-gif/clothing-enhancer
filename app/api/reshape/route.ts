@@ -11,6 +11,15 @@ function pickPrompt(style: string) {
   return prompts[style] ?? prompts.hanging;
 }
 
+async function toResizedAb(input: ArrayBuffer, size = 1024): Promise<ArrayBuffer> {
+  const sharp = (await import('sharp')).default;
+  const buf = await sharp(Buffer.from(input))
+    .resize(size, size, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
+    .png()
+    .toBuffer();
+  return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+}
+
 async function generateMask(imageAb: ArrayBuffer, removeBgKey: string): Promise<ArrayBuffer> {
   const fd = new FormData();
   fd.append('image_file', new Blob([imageAb], { type: 'image/png' }), 'image.png');
@@ -21,18 +30,23 @@ async function generateMask(imageAb: ArrayBuffer, removeBgKey: string): Promise<
     headers: { 'X-Api-Key': removeBgKey },
     body: fd,
   });
-  if (!res.ok) throw new Error(`remove.bg error: ${res.status}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('remove.bg error:', errText);
+    throw new Error(`remove.bg error: ${res.status} ${errText}`);
+  }
 
   const pngAb = await res.arrayBuffer();
 
   const sharp = (await import('sharp')).default;
+  // Extract alpha → invert: subject=black (preserve), bg=white (inpaint)
   const maskBuffer = await sharp(Buffer.from(pngAb))
+    .resize(1024, 1024, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
     .extractChannel('alpha')
     .negate()
     .png()
     .toBuffer();
 
-  // Slice returns a proper ArrayBuffer (not SharedArrayBuffer)
   return maskBuffer.buffer.slice(maskBuffer.byteOffset, maskBuffer.byteOffset + maskBuffer.byteLength) as ArrayBuffer;
 }
 
@@ -49,7 +63,8 @@ export async function POST(req: NextRequest) {
     if (!stabilityKey) return NextResponse.json({ error: 'STABILITY_API_KEY saknas.' }, { status: 500 });
     if (!removeBgKey) return NextResponse.json({ error: 'REMOVE_BG_API_KEY saknas.' }, { status: 500 });
 
-    const imageAb = await image.arrayBuffer();
+    const rawAb = await image.arrayBuffer();
+    const imageAb = await toResizedAb(rawAb, 1024);
     const maskAb = await generateMask(imageAb, removeBgKey);
 
     const out = new FormData();
@@ -58,9 +73,6 @@ export async function POST(req: NextRequest) {
     out.append('prompt', pickPrompt(style));
     out.append('output_format', 'png');
     out.append('negative_prompt', 'different garment, wrong color, watermark, text, blurry, distorted');
-    out.append('seed', '0');
-    out.append('cfg_scale', '5');
-    out.append('steps', '35');
 
     const res = await fetch('https://api.stability.ai/v2beta/stable-image/edit/inpaint', {
       method: 'POST',
@@ -73,17 +85,22 @@ export async function POST(req: NextRequest) {
 
     if (!res.ok) {
       const txt = await res.text();
-      return NextResponse.json({ error: txt }, { status: res.status });
+      console.error('Stability error:', txt);
+      return NextResponse.json({ error: `Stability API fel: ${txt}` }, { status: res.status });
     }
 
     const data = await res.json();
     const imageData: string | undefined = data.image ?? data.artifacts?.[0]?.base64;
-    if (!imageData) return NextResponse.json({ error: 'Inget bildresultat fr\u00e5n API.' }, { status: 502 });
+    if (!imageData) {
+      console.error('Stability svar saknar bild:', JSON.stringify(data));
+      return NextResponse.json({ error: 'Inget bildresultat fr\u00e5n API.' }, { status: 502 });
+    }
 
     const reshapedUrl = imageData.startsWith('data:') ? imageData : `data:image/png;base64,${imageData}`;
     return NextResponse.json({ reshapedUrl });
 
   } catch (err) {
+    console.error('Reshape error:', err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'N\u00e5got gick fel.' },
       { status: 500 }
