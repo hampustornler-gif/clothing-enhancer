@@ -4,9 +4,9 @@ export const runtime = 'nodejs';
 
 function pickPrompt(style: string) {
   const prompts: Record<string, string> = {
-    flat: 'same garment, flat lay, clean white background, subtle natural folds, professional e-commerce product photo, preserve logo, preserve color, preserve material',
-    hanging: 'same garment on hanger, clean white background, subtle tailoring, neat drape, preserve logo, preserve color, preserve material, professional product photo',
-    worn: 'same garment on ghost mannequin, clean white background, natural drape, preserve logo, preserve color, preserve material, professional e-commerce photo',
+    flat: 'professional e-commerce product photo, same garment flat lay, pure white background, centered, soft studio lighting, preserve all logos text and colors exactly, no shadows, sharp focus',
+    hanging: 'professional e-commerce product photo, same garment on hanger, pure white background, centered, soft studio lighting, preserve all logos text and colors exactly, no shadows, sharp focus',
+    worn: 'professional e-commerce product photo, same garment on ghost mannequin, pure white background, centered, soft studio lighting, preserve all logos text and colors exactly, no shadows, sharp focus',
   };
   return prompts[style] ?? prompts.hanging;
 }
@@ -20,36 +20,6 @@ async function toResizedAb(input: ArrayBuffer, size = 1024): Promise<ArrayBuffer
   return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
 }
 
-async function generateMask(imageAb: ArrayBuffer, removeBgKey: string): Promise<ArrayBuffer> {
-  const fd = new FormData();
-  fd.append('image_file', new Blob([imageAb], { type: 'image/png' }), 'image.png');
-  fd.append('size', 'auto');
-
-  const res = await fetch('https://api.remove.bg/v1.0/removebg', {
-    method: 'POST',
-    headers: { 'X-Api-Key': removeBgKey },
-    body: fd,
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('remove.bg error:', errText);
-    throw new Error(`remove.bg error: ${res.status} ${errText}`);
-  }
-
-  const pngAb = await res.arrayBuffer();
-
-  const sharp = (await import('sharp')).default;
-  // Extract alpha → invert: subject=black (preserve), bg=white (inpaint)
-  const maskBuffer = await sharp(Buffer.from(pngAb))
-    .resize(1024, 1024, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
-    .extractChannel('alpha')
-    .negate()
-    .png()
-    .toBuffer();
-
-  return maskBuffer.buffer.slice(maskBuffer.byteOffset, maskBuffer.byteOffset + maskBuffer.byteLength) as ArrayBuffer;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -59,22 +29,20 @@ export async function POST(req: NextRequest) {
     if (!image) return NextResponse.json({ error: 'Ingen bild uppladdad.' }, { status: 400 });
 
     const stabilityKey = process.env.STABILITY_API_KEY;
-    const removeBgKey = process.env.REMOVE_BG_API_KEY;
     if (!stabilityKey) return NextResponse.json({ error: 'STABILITY_API_KEY saknas.' }, { status: 500 });
-    if (!removeBgKey) return NextResponse.json({ error: 'REMOVE_BG_API_KEY saknas.' }, { status: 500 });
 
     const rawAb = await image.arrayBuffer();
     const imageAb = await toResizedAb(rawAb, 1024);
-    const maskAb = await generateMask(imageAb, removeBgKey);
 
     const out = new FormData();
     out.append('image', new Blob([imageAb], { type: 'image/png' }), 'image.png');
-    out.append('mask', new Blob([maskAb], { type: 'image/png' }), 'mask.png');
     out.append('prompt', pickPrompt(style));
     out.append('output_format', 'png');
-    out.append('negative_prompt', 'different garment, wrong color, watermark, text, blurry, distorted');
+    out.append('negative_prompt', 'different garment, changed colors, changed logos, changed text, watermark, blurry, distorted, mannequin visible, person visible, background objects');
+    out.append('image_strength', '0.35');
+    out.append('mode', 'image-to-image');
 
-    const res = await fetch('https://api.stability.ai/v2beta/stable-image/edit/inpaint', {
+    const res = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${stabilityKey}`,
